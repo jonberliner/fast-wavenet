@@ -18,7 +18,7 @@ inputs, targets, eras = util.make_numerai_batch('assets/numerai/numerai_training
 
 #
 # randomly cut up a single era as our data
-holdouts = rng.choice(np.unique(eras), 2 + 1, replace=False).tolist()
+holdouts = rng.choice(np.unique(eras), 3 + 1, replace=False).tolist()
 P_TRAIN = 0.9
 i_all = rng.permutation(np.where(np.vectorize(lambda string: string in holdouts[:-1])(eras))[0])
 n_train = int(len(i_all)*P_TRAIN)
@@ -60,11 +60,11 @@ assert dat.holdout.y.shape[0] == dat.holdout.num_examples
 # GMVAE MODEL
 DX = inputs.shape[1]
 DY = targets.shape[1]
-P_DROP = 0.2
+P_DROP = 0.
 BN = True
 DZ_NORMAL = 61
 DZ_BERNOULLI = 37
-D_HID = 127
+D_HID = 1024
 model = gmvae(DX, DY, DZ_NORMAL, DZ_BERNOULLI, D_HID, P_DROP, BN)
 
 # # DISCRIM MODEL (called res but mess around with a buncha variants on a big ol mlp regression)
