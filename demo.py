@@ -15,20 +15,12 @@ holdouts = rng.choice(np.unique(eras), 5, replace=False).tolist()
 i_train = np.where(np.vectorize(lambda string: string not in holdouts)(eras))[0]
 i_test = np.where(np.vectorize(lambda string: string in holdouts)(eras))[0]
 
-i_train = rng.permutation(i_train)[:100]
-
-
 holdouts = rng.choice(np.unique(eras), 1, replace=False).tolist()
-
 P_TRAIN = 0.8
-i_train = np.where(np.vectorize(lambda string: string not in holdouts)(eras))[0]
-n_train = int(len(i_train)*P_TRAIN)
-i_pool = rng.permutation(i_train)[:n_train]
-
-
-i_test = np.where(np.vectorize(lambda string: string in holdouts)(eras))[0]
-
-i_train = rng.permutation(i_train)[:100]
+i_all = rng.permuation(np.where(np.vectorize(lambda string: string not in holdouts)(eras))[0])
+n_train = int(len(i_all)*P_TRAIN)
+i_train = i_all[:n_train]
+i_test = i_all[n_train:]
 
 # i_choice = rng.choice(inputs.shape[0], 100, replace=False)
 # inputs = inputs[i_choice]
