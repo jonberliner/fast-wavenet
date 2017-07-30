@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from scipy.io import wavfile
 
@@ -22,4 +23,14 @@ def make_batch(path):
 
     # Encode targets as ints.
     targets = (np.digitize(data_[1::], bins, right=False) - 1)[None, :]
+    return inputs, targets
+
+
+def make_numerai_batch(path):
+    df = pd.read_csv(path)
+    df_input_cols= [df[feature].values for feature in df.keys() if 'feature' in feature]
+    inputs = np.vstack(df_input_cols).T
+
+    targets = df.target.values[:, None]
+
     return inputs, targets
