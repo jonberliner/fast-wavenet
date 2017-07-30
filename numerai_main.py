@@ -10,11 +10,13 @@ import util
 
 # GET OUR DATA
 inputs, targets, eras = util.make_numerai_batch('assets/numerai/numerai_training_data.csv')
-holdouts = rng.choice(np.unique(eras), 5, replace=False).tolist()
 
-i_train = np.where(np.vectorize(lambda string: string not in holdouts)(eras))[0]
-i_test = np.where(np.vectorize(lambda string: string in holdouts)(eras))[0]
+# # REAL PERFORMER: do era holdout for validation
+# holdouts = rng.choice(np.unique(eras), 5, replace=False).tolist()
+# i_train = np.where(np.vectorize(lambda string: string not in holdouts)(eras))[0]
+# i_test = np.where(np.vectorize(lambda string: string in holdouts)(eras))[0]
 
+# randomly cut up a single era as our data
 holdouts = rng.choice(np.unique(eras), 1, replace=False).tolist()
 P_TRAIN = 0.8
 i_all = rng.permuation(np.where(np.vectorize(lambda string: string not in holdouts)(eras))[0])
@@ -22,10 +24,8 @@ n_train = int(len(i_all)*P_TRAIN)
 i_train = i_all[:n_train]
 i_test = i_all[n_train:]
 
-# i_choice = rng.choice(inputs.shape[0], 100, replace=False)
-# inputs = inputs[i_choice]
-# targets = targets[i_choice]
 
+# PUT DATA IS STANDARD DATASET FORMAT
 array_rank = lambda npa: len(npa.shape)
 dat = util._Bunch()
 # train set
@@ -45,9 +45,9 @@ assert array_rank(dat.test.y) == 2
 dat.test.num_examples = dat.test.x.shape[0]
 assert dat.test.y.shape[0] == dat.test.num_examples
 
+
 # BUILD OUR MODEL
-N_TRAIN = inputs.shape[0]
-assert targets.shape[0] == N_TRAIN
+# GMVAE MODEL
 DX = inputs.shape[1]
 DY = targets.shape[1]
 P_DROP = 0.2
@@ -57,6 +57,7 @@ DZ_BERNOULLI = 19
 D_HID = 101
 model = gmvae(DX, DY, DZ_NORMAL, DZ_BERNOULLI, D_HID, P_DROP, BN)
 
+# # DISCRIM MODEL (called res but mess around with a buncha variants on a big ol mlp regression)
 # DX = inputs.shape[1]
 # DY = targets.shape[1]
 # D_HID = 256
@@ -64,9 +65,6 @@ model = gmvae(DX, DY, DZ_NORMAL, DZ_BERNOULLI, D_HID, P_DROP, BN)
 # P_DROP = 0.#2
 # BN = False
 # model = res(DX, DY, D_HID, N_HID, P_DROP, BN)
-
-n_step = int(1e4)  #kwargs.get('n_step', int(1e4))
-batch_size = 256  #kwargs.get('batch_size', 64)
 
 def _prep_fd(d0, i_batch, temp0, is_training):
     x0 = d0.x[i_batch, :]
@@ -105,13 +103,18 @@ def _test(sess, d0, temp0, is_training, i_step, split_name):
 
 
 
-batcher = util.Batcher(dat.train.num_examples, batch_size)
+# # training params
 n_step = int(1e6)
+BATCH_SIZE = 256
 TEST_EVERY = int(1e3)
+# params for discrete optimization only
 ANNEAL_EVERY = int(1e3)
 ANNEAL_RATE = 0.9
+INIT_TEMP = 1.
 
-temp0 = 1.
+# let's train!
+temp0 = INIT_TEMP
+batcher = util.Batcher(dat.train.num_examples, BATCH_SIZE)
 for i_step in range(n_step):
     i_batch = batcher()
     _train_step(model.sess, dat.train, i_batch, temp0, True, i_step)
