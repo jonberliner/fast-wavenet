@@ -88,13 +88,14 @@ def gmvae(DX, DY, DZ_NORMAL, DZ_BERNOULLI, D_HID, P_DROP, BN):
         kl_qp_y = tfd.kl_divergence(qy, py)
         kl_qp_z_normal = tfd.kl_divergence(qznormal, pznormal)
         kl_qp_z_bernoulli = tfd.kl_divergence(qzbernoulli, pzbernoulli)
-        negloglik_x = tf.nn.sigmoid_cross_entropy_with_logits(logits=px_logits,
-                                                              labels=x_ph)
+        negloglik_x = -px.log_prob(xsample)
+        # negloglik_x = tf.nn.sigmoid_cross_entropy_with_logits(logits=px_logits,
+        #                                                       labels=x_ph)
 
-        losses_given_y = tf.reduce_sum(kl_qp_y, 1)
-                         # tf.reduce_sum(negloglik_x, 1) +\
-                         # tf.reduce_sum(kl_qp_z_normal, 1)
-                         # tf.reduce_sum(kl_qp_z_bernoulli, 1) +\
+        losses_given_y = tf.reduce_sum(kl_qp_y, 1) +\
+                         tf.reduce_sum(negloglik_x, 1) +\
+                         tf.reduce_sum(kl_qp_z_normal, 1) +\
+                         tf.reduce_sum(kl_qp_z_bernoulli, 1)
 
             # if y0 == 0.:
             #     weighted_losses_given_y = losses_given_y * (1.-qy_prob)
@@ -102,7 +103,7 @@ def gmvae(DX, DY, DZ_NORMAL, DZ_BERNOULLI, D_HID, P_DROP, BN):
             #     weighted_losses_given_y = losses_given_y * qy_prob
 
         weighted_losses_given_y = losses_given_y
-        loss += tf.reduce_sum(weighted_losses_given_y)
+        loss += tf.reduce_mean(weighted_losses_given_y)
 
         train_loss = tf.identity(loss)
         trainer = tf.train.AdamOptimizer(1e-3).minimize(train_loss)
