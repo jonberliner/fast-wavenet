@@ -22,12 +22,12 @@ def res(DX, DY, D_HID, N_HID, P_DROP, BN):
             res_hi = tfm.fc_layer(out,
                                   dim_output=D_HID,
                                   act_fn=tf.nn.relu,
-                                  p_drop=0.,
+                                  p_drop=P_DROP,
                                   batch_norm=BN,
                                   name='h%d_res' % hi,
                                   is_training=is_training_ph)
-            out = res_hi  # + out
-            out = tfm.dropout(out, is_training=is_training_ph, p_drop=P_DROP)
+            out = res_hi + out
+            # out = tfm.dropout(out, is_training=is_training_ph, p_drop=P_DROP)
 
         yhat_logit = tfm.linear(out, DY, name='yhat_logit')
         qy_prob = tf.nn.sigmoid(yhat_logit)
@@ -49,7 +49,7 @@ def res(DX, DY, D_HID, N_HID, P_DROP, BN):
         #         train_loss += elastic(var, WL1, WL2)
     trainer = tf.train.AdamOptimizer(1e-3).minimize(train_loss)
 
-    out = util._Bunch()
+    out = util.Bunch()
     out.sess = tf.Session()
     out.sess.run(tf.global_variables_initializer())
 
@@ -59,6 +59,8 @@ def res(DX, DY, D_HID, N_HID, P_DROP, BN):
     out.is_training_ph = is_training_ph
 
     out.loss = loss
+    out.label_loss = loss
+
     out.train_loss = train_loss
 
     out.trainer = trainer

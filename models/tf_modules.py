@@ -1,4 +1,3 @@
-from util import _Bunch, Batcher
 import tensorflow as tf
 import numpy as np
 

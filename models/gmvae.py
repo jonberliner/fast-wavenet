@@ -66,7 +66,8 @@ def gmvae(DX, DY, DZ_NORMAL, DZ_BERNOULLI, D_HID, P_DROP, BN):
         qznormal_lv = tfm.linear(h3, DZ_NORMAL, name='qznlv')
         qznormal_var = tf.nn.softplus(qznormal_lv) + EPS
         qznormal = tfd.Normal(qznormal_mu, qznormal_var)
-        znormal = qznormal.sample()
+        # znormal = qznormal.sample()
+        znormal = qznormal.mean()
 
         qzbernoulli_logit = clip_logit(tfm.linear(h3, DZ_BERNOULLI, name='qzbl'))
         qzbernoulli = tfd.Bernoulli(logits=qzbernoulli_logit)
@@ -108,17 +109,18 @@ def gmvae(DX, DY, DZ_NORMAL, DZ_BERNOULLI, D_HID, P_DROP, BN):
         kl_qp_z_bernoulli = tfd.kl_divergence(qzbernoulli, pzbernoulli)
         negloglik_x = -px.log_prob(xsample)
 
-        losses = tf.reduce_sum(kl_qp_y, 1) +\
-                 tf.reduce_sum(negloglik_x, 1) +\
-                 tf.reduce_sum(kl_qp_z_normal, 1) +\
-                 tf.reduce_sum(kl_qp_z_bernoulli, 1)
+        losses = tf.reduce_mean(kl_qp_y, 1) +\
+                 tf.reduce_mean(negloglik_x, 1) +\
+                 tf.reduce_mean(kl_qp_z_normal, 1) +\
+                 tf.reduce_mean(kl_qp_z_bernoulli, 1) +\
+                 tf.reduce_mean(-qy.entropy())
 
-        loss = tf.reduce_mean(losses)
+        loss = tf.reduce_sum(losses)
 
         train_loss = tf.identity(loss)
         # add elastic penalty (l1 + l2) to linear transform params
-        WL1 = 1e-3
-        WL2 = 1e-3
+        WL1 = 1e-4
+        WL2 = 1e-4
         l1 = lambda v: tf.reduce_sum(tf.abs(v))
         l2 = lambda v: tf.reduce_sum(tf.square(v))
         elastic = lambda v, wl1, wl2: l1(v)*wl1 + l2(v)*wl2
@@ -129,7 +131,7 @@ def gmvae(DX, DY, DZ_NORMAL, DZ_BERNOULLI, D_HID, P_DROP, BN):
 
         trainer = tf.train.AdamOptimizer(1e-3).minimize(train_loss)
 
-    out = util._Bunch()
+    out = util.Bunch()
     out.sess = tf.Session()
     out.sess.run(tf.global_variables_initializer())
 
