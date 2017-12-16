@@ -8,13 +8,13 @@ from layers import (_causal_linear, _output_linear, conv1d,
 class Model(object):
     def __init__(self,
                  num_time_samples,
-                 num_channels=1,
-                 num_classes=256,
+                 num_channels,
+                 num_classes,
                  num_blocks=2,
                  num_layers=14,
                  num_hidden=128,
                  gpu_fraction=1.0):
-        
+
         self.num_time_samples = num_time_samples
         self.num_channels = num_channels
         self.num_classes = num_classes
@@ -22,7 +22,7 @@ class Model(object):
         self.num_layers = num_layers
         self.num_hidden = num_hidden
         self.gpu_fraction = gpu_fraction
-        
+
         inputs = tf.placeholder(tf.float32,
                                 shape=(None, num_time_samples, num_channels))
         targets = tf.placeholder(tf.int32, shape=(None, num_time_samples))
@@ -44,7 +44,7 @@ class Model(object):
                          bias=True)
 
         costs = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            outputs, targets)
+            logits=outputs, labels=targets)
         cost = tf.reduce_mean(costs)
 
         train_step = tf.train.AdamOptimizer(learning_rate=0.001).minimize(cost)
@@ -52,7 +52,7 @@ class Model(object):
         gpu_options = tf.GPUOptions(
             per_process_gpu_memory_fraction=gpu_fraction)
         sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
-        sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
 
         self.inputs = inputs
         self.targets = targets
@@ -108,7 +108,7 @@ class Generator(object):
                     state_size = 1
                 else:
                     state_size = self.model.num_hidden
-                    
+
                 q = tf.FIFOQueue(rate,
                                  dtypes=tf.float32,
                                  shapes=(batch_size, state_size))
@@ -130,7 +130,7 @@ class Generator(object):
         self.inputs = inputs
         self.init_ops = init_ops
         self.out_ops = out_ops
-        
+
         # Initialize queues.
         self.model.sess.run(self.init_ops)
 
